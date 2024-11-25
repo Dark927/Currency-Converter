@@ -89,7 +89,7 @@ namespace Currency_Converter
                 string? fromCurrencyName = GetDataTextFromCmb(_sourceCurrencyCmb);
                 string? toCurrencyName = GetDataTextFromCmb(_targetCurrencyCmb);
 
-                string resultLabel = $"{_currencyAmountInput.Text} {fromCurrencyName} = {convertationResult} {toCurrencyName}";
+                string resultLabel = $"{currencyInput.ToString().Trim('0')} {fromCurrencyName} = {convertationResult} {toCurrencyName}";
                 UpdateResultLabel(resultLabel, _defaultResultBrush);
             }
         }
@@ -103,6 +103,16 @@ namespace Currency_Converter
         private decimal ConvertCurrency(decimal currencyAmount, decimal sourceCurrency, decimal targetCurrency)
         {
             return (currencyAmount * sourceCurrency) / targetCurrency;
+        }
+
+        private void btnSave_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void btnCancel_Click(object sender, RoutedEventArgs e)
+        {
+
         }
 
         private bool IsAllOptionsCorrect()
@@ -145,8 +155,13 @@ namespace Currency_Converter
 
         private void ValidateCurrencyAmountInput(object sender, TextCompositionEventArgs e)
         {
-            Regex rg = new Regex("(^[0-9]+)(,?([0-9]+)?)$");
+            Regex rg = new Regex("^(([1-9][0-9]*)|(0?))(,[0-9]*)?$");
             e.Handled = !rg.IsMatch(_currencyAmountInput.Text + e.Text);
+        }
+
+        private void dgvCurrency_SelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
+        {
+
         }
     }
 }
