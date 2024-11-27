@@ -3,23 +3,36 @@ using System.ComponentModel;
 using System.Windows.Input;
 using System.Windows;
 using Currency_Converter.ViewModels;
+using System.Windows.Controls;
+using Currency_Converter.Scripts;
+using System.Collections.ObjectModel;
+using System.Data;
+using System.Text.RegularExpressions;
 
 namespace Currency_Converter;
 
 public class MainViewModel : INotifyPropertyChanged
 {
+    // Tab Control depends on values of TabType
     public enum TabType
     {
-        Converter,
+        Converter = 1,
         Master,
     }
 
+
     #region Fields
+
 
     public event PropertyChangedEventHandler? PropertyChanged;
     private readonly MainWindow _mainWindow;
 
     private Dictionary<TabType, MainViewBase> _mainViewTabsDict;
+
+    private TabType _currentTabType;
+
+    private ObservableCollection<CurrencyMaster>? _currencyMasterList;
+
 
     #endregion
 
@@ -27,8 +40,23 @@ public class MainViewModel : INotifyPropertyChanged
     #region Properties
 
     public MainWindow Window { get => _mainWindow; }
-    public ICommand? ClearMainTabCommand { get; private set; }
+    public ICommand? ClearCommand { get; private set; }
+    public ICommand? ConfirmCommand { get; private set; }
 
+    private TabItem _selectedTab;
+
+    public TabItem SelectedTab
+    {
+        get => _selectedTab;
+        set
+        {
+            if (_selectedTab != value)
+            {
+                _selectedTab = value;
+                OnCurrentTabChanged(value.TabIndex);
+            }
+        }
+    }
 
 
     #endregion
@@ -36,52 +64,107 @@ public class MainViewModel : INotifyPropertyChanged
 
     #region Methods
 
+
+    // Pragma used to dissable NonNullableField in constructor warning
+#pragma warning disable CS8618
+
     public MainViewModel()
     {
-        _mainWindow = (MainWindow)Application.Current.MainWindow;
-
-        _mainViewTabsDict = new Dictionary<TabType, MainViewBase>
+        try
         {
-            [TabType.Converter] = new MainViewConverterTab(Window),
-        };
+            _mainWindow = (MainWindow)Application.Current.MainWindow;
 
-        InitCommands();
+            _mainViewTabsDict = new Dictionary<TabType, MainViewBase>
+            {
+                [TabType.Converter] = new MainViewConverterTab(Window),
+                [TabType.Master] = new MainViewMasterTab(Window),
+            };
+
+            _currentTabType = TabType.Converter;
+            InitCommands();
+
+
+            // Currency Binding 
+
+            SelectedTab = Window.Tabs.Items.OfType<TabItem>().FirstOrDefault(new TabItem());
+            _currencyMasterList = null;
+            Window.Loaded += BindCurrency;
+        }
+        catch (Exception ex)
+        {
+            InfoBoxes.ExceptionInfo(ex.Message);
+        }
     }
+
+#pragma warning restore CS8618
+
 
     private void InitCommands()
     {
-        ClearMainTabCommand = new RelayCommand(_mainViewTabsDict[TabType.Converter].Clear);
+        ClearCommand = new RelayCommand(Clear);
+        ConfirmCommand = new RelayCommand(Confirm);
     }
 
+    public void Clear(object parameter)
+    {
+        TryExecuteCommand(_mainViewTabsDict[_currentTabType].Clear);
+    }
+
+    public void Confirm(object parameter)
+    {
+        TryExecuteCommand(_mainViewTabsDict[_currentTabType].Confirm);
+    }
+
+    public void OnPropertyChanged(string propertyName)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    public void OnCurrentTabChanged(int selectedTabIndex)
+    {
+        try
+        {
+            _currentTabType = (TabType)selectedTabIndex;
+        }
+        catch (Exception ex)
+        {
+            InfoBoxes.ExceptionInfo(ex.Message);
+        }
+    }
+
+    private void TryExecuteCommand(Action<object> command, object parameter = null)
+    {
+        try
+        {
+            command(parameter);
+        }
+        catch (Exception ex)
+        {
+            InfoBoxes.ExceptionInfo(ex.Message);
+        }
+    }
+
+    private void BindCurrency(object? sender = null, RoutedEventArgs? args = null)
+    {
+        using (CurrencyMasterDataContext dataContext = new CurrencyMasterDataContext())
+        {
+            _currencyMasterList = new ObservableCollection<CurrencyMaster>(dataContext.CurrencyMasters);
+            CurrencyMaster firstMaster = new CurrencyMaster() { Amount = 0, CurrencyName = "--SELECT--" };
+            _currencyMasterList.Insert(0, firstMaster);
+        }
+
+        //dtCurrency.Rows.Add("SAR", 20);
+        //dtCurrency.Rows.Add("POUND", 5);
+        //dtCurrency.Rows.Add("DEM", 43);
+
+        _mainViewTabsDict[TabType.Converter].BindData(_currencyMasterList);
+        _mainViewTabsDict[TabType.Master].BindData(_currencyMasterList);
+    }
 
 
     #endregion
 
-    //private void BindCurrency()
-    //{
-    //    DataTable dtCurrency = new DataTable();
-    //    dtCurrency.Columns.Add("Text");
-    //    dtCurrency.Columns.Add("Value");
 
-    //    dtCurrency.Rows.Add("--SELECT--", 0);
-    //    dtCurrency.Rows.Add("INR", 1);
-    //    dtCurrency.Rows.Add("USD", 75);
-    //    dtCurrency.Rows.Add("EUR", 85);
-    //    dtCurrency.Rows.Add("SAR", 20);
-    //    dtCurrency.Rows.Add("POUND", 5);
-    //    dtCurrency.Rows.Add("DEM", 43);
-
-    //    BindComboBox(_sourceCurrencyCmb, dtCurrency);
-    //    BindComboBox(_targetCurrencyCmb, dtCurrency);
-    //}
-
-    //private void BindComboBox(ComboBox comboBox, DataTable dataTable)
-    //{
-    //    comboBox.ItemsSource = dataTable.DefaultView;
-    //    comboBox.DisplayMemberPath = "Text";
-    //    comboBox.SelectedValuePath = "Value";
-    //    comboBox.SelectedIndex = 0;
-    //}
 
 
 
@@ -95,10 +178,7 @@ public class MainViewModel : INotifyPropertyChanged
     //        decimal convertedToValue = Convert.ToDecimal(_targetCurrencyCmb.SelectedValue.ToString());
     //        string convertationResult = ConvertCurrency(currencyInput, currencyFromValue, convertedToValue).ToString("N3");
 
-    //        string? fromCurrencyName = GetDataTextFromCmb(_sourceCurrencyCmb);
-    //        string? toCurrencyName = GetDataTextFromCmb(_targetCurrencyCmb);
 
-    //        string resultLabel = $"{currencyInput.ToString().Trim('0')} {fromCurrencyName} = {convertationResult} {toCurrencyName}";
     //        UpdateResultLabel(resultLabel, _defaultResultBrush);
     //    }
     //}
@@ -109,10 +189,6 @@ public class MainViewModel : INotifyPropertyChanged
     //    return rowView["Text"].ToString();
     //}
 
-    //private decimal ConvertCurrency(decimal currencyAmount, decimal sourceCurrency, decimal targetCurrency)
-    //{
-    //    return (currencyAmount * sourceCurrency) / targetCurrency;
-    //}
 
     //private void btnSave_Click(object sender, RoutedEventArgs e)
     //{
@@ -124,54 +200,11 @@ public class MainViewModel : INotifyPropertyChanged
 
     //}
 
-    //private bool IsAllOptionsCorrect()
-    //{
-    //    bool isCorrect = true;
-    //    string messageBoxTitle = "Info";
-
-    //    if ((_currencyAmountInput.Text == null) || (_currencyAmountInput.Text.Trim() == string.Empty))
-    //    {
-    //        DisplayMessageBox("Please Enter Currency", messageBoxTitle);
-    //        _currencyAmountInput.Focus();
-    //        isCorrect = false;
-    //    }
-    //    else if ((_sourceCurrencyCmb.SelectedValue == null) || (_sourceCurrencyCmb.SelectedIndex == 0))
-    //    {
-    //        DisplayMessageBox("Please Enter Currency FROM", messageBoxTitle);
-    //        _sourceCurrencyCmb.Focus();
-    //        isCorrect = false;
-    //    }
-    //    else if ((_targetCurrencyCmb.SelectedValue == null) || (_targetCurrencyCmb.SelectedIndex == 0))
-    //    {
-    //        DisplayMessageBox("Please Enter Currency TO", messageBoxTitle);
-    //        _targetCurrencyCmb.Focus();
-    //        isCorrect = false;
-    //    }
-
-    //    return isCorrect;
-    //}
-
-    //private void DisplayMessageBox(string message, string title)
-    //{
-    //    MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Information);
-    //}
-
-
-
-    //private void ValidateCurrencyAmountInput(object sender, TextCompositionEventArgs e)
-    //{
-    //    Regex rg = new Regex("^(([1-9][0-9]*)|(0?))(,[0-9]*)?$");
-    //    e.Handled = !rg.IsMatch(_currencyAmountInput.Text + e.Text);
-    //}
-
     //private void dgvCurrency_SelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
     //{
 
     //}
 
 
-    //public void OnPropertyChanged(string propertyName)
-    //{
-    //    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    //}
+
 }

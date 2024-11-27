@@ -16,5 +16,7 @@ namespace Currency_Converter.ViewModels
         }
 
         abstract public void Clear(object? parameter = null);
+        abstract public void Confirm(object? parameter = null);
+        abstract public void BindData(object data);
     }
 }
