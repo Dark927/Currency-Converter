@@ -23,7 +23,7 @@ namespace Currency_Converter
             return _lastResult;
         }
 
-        public string GenerateResultLabel(string fromCurrencyName, string toCurrencyName, int resultPrecision)
+        public string GenerateResultLabel(string? fromCurrencyName, string? toCurrencyName, int resultPrecision)
         {
             string resultFormat = "N" + resultPrecision.ToString();
             return $"{_lastAmount} {fromCurrencyName} = {_lastResult.ToString(resultFormat)} {toCurrencyName}";

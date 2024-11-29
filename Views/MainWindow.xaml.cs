@@ -48,7 +48,7 @@ public partial class MainWindow : Window
     public TextBox MasterAmountValue { get => _masterAmountValue; }
     public TextBox MasterCurrencyName { get => _masterCurrencyName; }
     public DataGrid CurrencyDataGrid { get => _currencyDataGrid; }
-
+    public DataGridColumn GridEditColumn { get => _gridEditColumn; }
 
     #endregion
 
@@ -95,11 +95,6 @@ public partial class MainWindow : Window
 
     private void ValidateCurrencyAmountInput(object sender, TextCompositionEventArgs e)
     {
-        e.Handled = !TextValidator.IsCurrencyValueCorrect(CurrencyAmountInput.Text + e.Text);
-    }
-
-    private void dgvCurrency_SelectedCellsChanged(object sender, SelectedCellsChangedEventArgs e)
-    {
-
+        e.Handled = !TextValidator.IsCurrencyValueCorrect(((TextBox)sender).Text + e.Text);
     }
 }

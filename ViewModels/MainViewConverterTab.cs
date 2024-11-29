@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using System.Text;
@@ -29,10 +30,8 @@ namespace Currency_Converter.ViewModels
 
         public override void BindData(object data)
         {
-            IEnumerable<CurrencyMaster> dataToBind = (IEnumerable<CurrencyMaster>)data;
-
-            BindComboBox(_selectedSourceCurrencyCmb, dataToBind);
-            BindComboBox(_selectedTargetCurrencyCmb, dataToBind);
+            BindComboBox(_selectedSourceCurrencyCmb, data);
+            BindComboBox(_selectedTargetCurrencyCmb, data);
         }
 
         public override void Clear(object? parameter = null)
@@ -112,8 +111,9 @@ namespace Currency_Converter.ViewModels
         private bool IsCurrencySelectedCorrectly(ComboBox comboBox) => !((comboBox.SelectedValue == null) || (comboBox.SelectedIndex == 0));
         private bool IsInputCorrect(TextBox textBox) => !((textBox.Text == null) || (textBox.Text.Trim() == string.Empty));
 
-        private void BindComboBox(ComboBox comboBox, IEnumerable<CurrencyMaster> dataList)
+        private void BindComboBox(ComboBox comboBox, object data)
         {
+            ObservableCollection<CurrencyMaster> dataList = (ObservableCollection<CurrencyMaster>)data;
             comboBox.ItemsSource = dataList;
             comboBox.DisplayMemberPath = nameof(CurrencyMaster.CurrencyName);
             comboBox.SelectedValuePath = nameof(CurrencyMaster.Amount);

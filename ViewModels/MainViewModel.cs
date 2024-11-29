@@ -23,7 +23,6 @@ public class MainViewModel : INotifyPropertyChanged
 
     #region Fields
 
-
     public event PropertyChangedEventHandler? PropertyChanged;
     private readonly MainWindow _mainWindow;
 
@@ -32,16 +31,21 @@ public class MainViewModel : INotifyPropertyChanged
     private TabType _currentTabType;
 
     private ObservableCollection<CurrencyMaster>? _currencyMasterList;
-
+    private CurrencyMaster? _gridCurrentItem;
+    private int _gridSelectedItemID;
 
     #endregion
 
 
     #region Properties
 
+    public int EditButtonDisplayIndex { get; set; }
+
     public MainWindow Window { get => _mainWindow; }
     public ICommand? ClearCommand { get; private set; }
     public ICommand? ConfirmCommand { get; private set; }
+    public ICommand? UpdateCommand { get; private set; }
+    public ICommand? DeleteCommand { get; private set; }
 
     private TabItem _selectedTab;
 
@@ -58,6 +62,42 @@ public class MainViewModel : INotifyPropertyChanged
         }
     }
 
+    public CurrencyMaster? GridCurrentItem
+    {
+        get => _gridCurrentItem;
+        set
+        {
+            if (value != null)
+            {
+                GridSelectedItemID = value.Id;
+            }
+            _gridCurrentItem = value;
+            OnPropertyChanged(nameof(GridCurrentItem));
+        }
+    }
+
+    public ObservableCollection<CurrencyMaster>? CurrencyMasterList
+    {
+        get => _currencyMasterList;
+        set
+        {
+            _currencyMasterList = value;
+            OnPropertyChanged(nameof(CurrencyMasterList));
+        }
+    }
+
+    public int GridSelectedItemID
+    {
+        get => _gridSelectedItemID;
+        set
+        {
+            if (_gridSelectedItemID != value)
+            {
+                _gridSelectedItemID = value;
+                OnPropertyChanged(nameof(GridSelectedItemID));
+            }
+        }
+    }
 
     #endregion
 
@@ -87,7 +127,7 @@ public class MainViewModel : INotifyPropertyChanged
             // Currency Binding 
 
             SelectedTab = Window.Tabs.Items.OfType<TabItem>().FirstOrDefault(new TabItem());
-            _currencyMasterList = null;
+            CurrencyMasterList = null;
             Window.Loaded += BindCurrency;
         }
         catch (Exception ex)
@@ -103,6 +143,8 @@ public class MainViewModel : INotifyPropertyChanged
     {
         ClearCommand = new RelayCommand(Clear);
         ConfirmCommand = new RelayCommand(Confirm);
+        UpdateCommand = new RelayCommand(UpdateData);
+        DeleteCommand = ((MainViewMasterTab)_mainViewTabsDict[TabType.Master]).DeleteCommand;
     }
 
     public void Clear(object parameter)
@@ -112,7 +154,7 @@ public class MainViewModel : INotifyPropertyChanged
 
     public void Confirm(object parameter)
     {
-        TryExecuteCommand(_mainViewTabsDict[_currentTabType].Confirm);
+        TryExecuteCommand(_mainViewTabsDict[_currentTabType].Confirm, GridSelectedItemID);
     }
 
     public void OnPropertyChanged(string propertyName)
@@ -132,7 +174,7 @@ public class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    private void TryExecuteCommand(Action<object> command, object parameter = null)
+    private void TryExecuteCommand(Action<object> command, object? parameter = null)
     {
         try
         {
@@ -148,17 +190,19 @@ public class MainViewModel : INotifyPropertyChanged
     {
         using (CurrencyMasterDataContext dataContext = new CurrencyMasterDataContext())
         {
-            _currencyMasterList = new ObservableCollection<CurrencyMaster>(dataContext.CurrencyMasters);
+            CurrencyMasterList = new ObservableCollection<CurrencyMaster>(dataContext.CurrencyMasters);
             CurrencyMaster firstMaster = new CurrencyMaster() { Amount = 0, CurrencyName = "--SELECT--" };
-            _currencyMasterList.Insert(0, firstMaster);
+            CurrencyMasterList.Insert(0, firstMaster);
         }
 
-        //dtCurrency.Rows.Add("SAR", 20);
-        //dtCurrency.Rows.Add("POUND", 5);
-        //dtCurrency.Rows.Add("DEM", 43);
+        _mainViewTabsDict[TabType.Converter].BindData(CurrencyMasterList);
+        _mainViewTabsDict[TabType.Master].BindData(CurrencyMasterList);
+    }
 
-        _mainViewTabsDict[TabType.Converter].BindData(_currencyMasterList);
-        _mainViewTabsDict[TabType.Master].BindData(_currencyMasterList);
+    private void UpdateData(object? parameter = null)
+    {
+        Window.CurrencyDataGrid.ItemsSource = CurrencyMasterList;
+        OnPropertyChanged(nameof(CurrencyMasterList));
     }
 
 
