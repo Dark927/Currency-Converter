@@ -1,7 +1,5 @@
 ﻿using System.Configuration;
-using System.Data;
 using System.Globalization;
-using System.Text.RegularExpressions;
 using System.Windows;
 
 namespace Currency_Converter

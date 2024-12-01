@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace Currency_Converter;
+﻿namespace Currency_Converter;
 
 public partial class CurrencyMaster
 {

@@ -1,13 +1,10 @@
-﻿using System;
-using System.ComponentModel;
-using System.Windows.Input;
-using System.Windows;
+﻿using Currency_Converter.Scripts;
 using Currency_Converter.ViewModels;
-using System.Windows.Controls;
-using Currency_Converter.Scripts;
 using System.Collections.ObjectModel;
-using System.Data;
-using System.Text.RegularExpressions;
+using System.ComponentModel;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace Currency_Converter;
 
@@ -207,10 +204,6 @@ public class MainViewModel : INotifyPropertyChanged
 
 
     #endregion
-
-
-
-
 
 
     //private void Convert_Click(object sender, RoutedEventArgs e)
